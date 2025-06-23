@@ -37,79 +37,36 @@ We have noticed that several works (approximately exceed ten recent months) have
 
 ## Installation
 
-To use WavTokenizer, install it using:
-
 ```bash
-conda create -n wavtokenizer python=3.9
-conda activate wavtokenizer
-pip install -r requirements.txt
+pip3 install git+https://github.com/mesolitica/WavTokenizer-package
 ```
 
-## Infer
-
-### Part1: Reconstruct audio from raw wav
+## Encode decode
 
 ```python
-
-from encoder.utils import convert_audio
+from wavtokenizer.encoder.utils import convert_audio
 import torchaudio
 import torch
-from decoder.pretrained import WavTokenizer
+from wavtokenizer.decoder.pretrained import WavTokenizer
 
+config_path = "configs/wavtokenizer_smalldata_frame75_3s_nq1_code4096_dim512_kmeans200_attn.yaml"
 
-device=torch.device('cpu')
+# !wget https://huggingface.co/novateur/WavTokenizer-large-speech-75token/resolve/main/wavtokenizer_large_speech_320_v2.ckpt
+model_path = "wavtokenizer_large_speech_320_v2.ckpt"
 
-config_path = "./configs/xxx.yaml"
-model_path = "./xxx.ckpt"
-audio_outpath = "xxx"
+model = WavTokenizer.from_pretrained0802(config_path, model_path)
 
-wavtokenizer = WavTokenizer.from_pretrained0802(config_path, model_path)
-wavtokenizer = wavtokenizer.to(device)
-
-
-wav, sr = torchaudio.load(audio_path)
+wav, sr = torchaudio.load('husein-assistant-trim.mp3')
 wav = convert_audio(wav, sr, 24000, 1) 
 bandwidth_id = torch.tensor([0])
-wav=wav.to(device)
-features,discrete_code= wavtokenizer.encode_infer(wav, bandwidth_id=bandwidth_id)
-audio_out = wavtokenizer.decode(features, bandwidth_id=bandwidth_id) 
-torchaudio.save(audio_outpath, audio_out, sample_rate=24000, encoding='PCM_S', bits_per_sample=16)
+
+_, discrete_code = model.encode_infer(wav, bandwidth_id=bandwidth_id)
+features = model.codes_to_features(discrete_code)
+
+audio_out = model.decode(features, bandwidth_id=bandwidth_id)
 ```
 
-
-### Part2: Generating discrete codecs
-```python
-
-from encoder.utils import convert_audio
-import torchaudio
-import torch
-from decoder.pretrained import WavTokenizer
-
-device=torch.device('cpu')
-
-config_path = "./configs/xxx.yaml"
-model_path = "./xxx.ckpt"
-
-wavtokenizer = WavTokenizer.from_pretrained0802(config_path, model_path)
-wavtokenizer = wavtokenizer.to(device)
-
-wav, sr = torchaudio.load(audio_path)
-wav = convert_audio(wav, sr, 24000, 1) 
-bandwidth_id = torch.tensor([0])
-wav=wav.to(device)
-_,discrete_code= wavtokenizer.encode_infer(wav, bandwidth_id=bandwidth_id)
-print(discrete_code)
-```
-
-
-
-### Part3: Audio reconstruction through codecs
-```python
-# audio_tokens [n_q,1,t]/[n_q,t]
-features = wavtokenizer.codes_to_features(audio_tokens)
-bandwidth_id = torch.tensor([0])  
-audio_out = wavtokenizer.decode(features, bandwidth_id=bandwidth_id)
-```
+Config and model also already mirrored at https://huggingface.co/huseinzol05/WavTokenizer-mirror
 
 ## Available models
 🤗 links to the Huggingface model hub.
